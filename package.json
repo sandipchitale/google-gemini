@@ -1,0 +1,21 @@
+{
+  "name": "google-gemini",
+  "version": "1.0.0",
+  "description": "A browser running Google Gemini as a companion to your shell",
+  "main": "google-gemini.ts",
+  "scripts": {
+    "type-check": "tsc --noEmit"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "type": "module",
+  "devDependencies": {
+    "@types/node": "^25.3.5",
+    "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "chrome-launcher": "^1.2.1",
+    "puppeteer-core": "^24.38.0"
+  }
+}
