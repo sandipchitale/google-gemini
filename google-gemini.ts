@@ -14,19 +14,10 @@ const REMOTE_DEBUGGING_URL = `http://127.0.0.1:${REMOTE_PORT}`;
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise((resolve) => {
     const server = net.createServer();
-
-    server.once('error', (err: any) => {
-      if (err.code === 'EADDRINUSE') {
-        resolve(false); // Port is taken
-      } else {
-        resolve(false); // Other errors (e.g., permission denied)
-      }
-    });
-
+    server.once('error', () => resolve(false));
     server.once('listening', () => {
-      server.close(() => resolve(true)); // Port is free
+      server.close(() => resolve(true));
     });
-
     server.listen(port, '127.0.0.1');
   });
 }
@@ -124,23 +115,20 @@ async function findPageForSession(sessionId: string): Promise<Page | undefined> 
     // 2. Filter for actual pages (tabs/windows)
     const pageTargets = targets.filter(t => t.type() === 'page');
 
-    // 3. Find page for session
-    for (const pageTarget of pageTargets) {
-        const page = await pageTarget.asPage();
-        if (page) {
-            const title = await page.title();
-            const windowName = await page.evaluate(() => window.name);
-            if (windowName === sessionId) {
-                return page;
-            }
-        }
-    }
+    // 3. Find page for session concurrently
+    const pages = await Promise.all(pageTargets.map(t => t.asPage()));
+    const validPages = pages.filter((p): p is Page => p !== null);
 
-    return undefined;
+    const matchingPages = await Promise.all(validPages.map(async (page) => {
+        const windowName = await page.evaluate(() => window.name).catch(() => null);
+        return { page, isMatch: windowName === sessionId };
+    }));
+
+    return matchingPages.find(p => p.isMatch)?.page;
 }
 
 async function readStdin(): Promise<string> {
-    const chunks: Buffer[] = []; ``
+    const chunks: Buffer[] = [];
     for await (const chunk of process.stdin) {
         chunks.push(Buffer.from(chunk));
     }
